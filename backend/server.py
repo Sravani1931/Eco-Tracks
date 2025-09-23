@@ -7,13 +7,15 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 import uuid
 import hashlib
 import time
 from datetime import datetime, timezone, timedelta
 import json
-import random
+import bcrypt
+import jwt
+from enum import Str, Enum
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -29,430 +31,292 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# JWT Configuration
+SECRET_KEY = "ecotrack_secret_key_change_in_production"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
 security = HTTPBearer()
 
-# Blockchain Simulation State
-class BlockchainSimulator:
-    def __init__(self):
-        self.blocks = []
-        self.pending_transactions = []
-        self.certificates = {}
-        self.institutions = {}
-        self.wallets = {}
-        self.current_block_number = 0
-        self.gas_price = 20  # Gwei
-        
-        # Initialize genesis block
-        self.create_genesis_block()
-    
-    def create_genesis_block(self):
-        genesis_block = {
-            "blockNumber": 0,
-            "timestamp": int(time.time()),
-            "previousHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-            "hash": "0x0000000000000000000000000000000000000000000000000000000000000001",
-            "transactions": [],
-            "gasUsed": 0,
-            "gasLimit": 8000000
-        }
-        self.blocks.append(genesis_block)
-    
-    def generate_address(self) -> str:
-        """Generate a mock Ethereum address"""
-        return f"0x{random.randbytes(20).hex()}"
-    
-    def generate_transaction_hash(self) -> str:
-        """Generate a mock transaction hash"""
-        return f"0x{random.randbytes(32).hex()}"
-    
-    def calculate_gas_cost(self, operation_type: str) -> int:
-        """Calculate gas cost for different operations"""
-        gas_costs = {
-            "register_institution": 150000,
-            "issue_certificate": 100000,
-            "verify_certificate": 21000,
-            "transfer": 21000
-        }
-        return gas_costs.get(operation_type, 21000)
-    
-    def calculate_certificate_hash(self, certificate_data: dict) -> str:
-        """Calculate SHA-256 hash of certificate data"""
-        cert_string = json.dumps(certificate_data, sort_keys=True)
-        return hashlib.sha256(cert_string.encode()).hexdigest()
-    
-    def create_transaction(self, from_address: str, to_address: str, operation: str, data: dict, gas_limit: int) -> dict:
-        """Create a new transaction"""
-        tx_hash = self.generate_transaction_hash()
-        gas_used = min(gas_limit, self.calculate_gas_cost(operation))
-        
-        transaction = {
-            "hash": tx_hash,
-            "from": from_address,
-            "to": to_address,
-            "operation": operation,
-            "data": data,
-            "gasLimit": gas_limit,
-            "gasUsed": gas_used,
-            "gasPrice": self.gas_price,
-            "timestamp": int(time.time()),
-            "blockNumber": None,  # Will be set when mined
-            "status": "pending"
-        }
-        
-        self.pending_transactions.append(transaction)
-        return transaction
-    
-    def mine_block(self):
-        """Mine pending transactions into a new block"""
-        if not self.pending_transactions:
-            return None
-        
-        self.current_block_number += 1
-        previous_hash = self.blocks[-1]["hash"]
-        
-        # Process transactions
-        block_transactions = self.pending_transactions.copy()
-        total_gas_used = sum(tx["gasUsed"] for tx in block_transactions)
-        
-        # Update transaction status and block number
-        for tx in block_transactions:
-            tx["status"] = "confirmed"
-            tx["blockNumber"] = self.current_block_number
-        
-        # Create new block
-        block_data = f"{self.current_block_number}{previous_hash}{json.dumps(block_transactions)}{int(time.time())}"
-        block_hash = f"0x{hashlib.sha256(block_data.encode()).hexdigest()}"
-        
-        new_block = {
-            "blockNumber": self.current_block_number,
-            "timestamp": int(time.time()),
-            "previousHash": previous_hash,
-            "hash": block_hash,
-            "transactions": block_transactions,
-            "gasUsed": total_gas_used,
-            "gasLimit": 8000000
-        }
-        
-        self.blocks.append(new_block)
-        self.pending_transactions = []
-        
-        return new_block
+# Carbon emission factors (kg CO2 per km)
+EMISSION_FACTORS = {
+    "car": 0.21,
+    "bus": 0.089,
+    "train": 0.041,
+    "flight": 0.255,
+    "walking": 0.0,
+    "cycling": 0.0
+}
 
-# Initialize blockchain simulator
-blockchain = BlockchainSimulator()
+class TransportType(str, Enum):
+    CAR = "car"
+    BUS = "bus"
+    TRAIN = "train"
+    FLIGHT = "flight"
+    WALKING = "walking"
+    CYCLING = "cycling"
 
 # Models
-class WalletConnect(BaseModel):
-    address: Optional[str] = None
-    
-class WalletResponse(BaseModel):
-    address: str
-    balance: float
-    
-class Institution(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    address: str
+class UserCreate(BaseModel):
     email: EmailStr
-    wallet_address: str
-    verified: bool = False
-    registered_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    password: str
+    name: str
 
-class CertificateData(BaseModel):
-    recipient_name: str
-    course_name: str
-    completion_date: str
-    grade: Optional[str] = None
-    institution_id: str
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
-class Certificate(BaseModel):
+class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    certificate_hash: str
-    recipient_name: str
-    course_name: str
-    completion_date: str
-    grade: Optional[str] = None
-    institution_id: str
-    institution_name: str
-    transaction_hash: str
-    block_number: int
-    issued_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    verified: bool = True
+    email: EmailStr
+    name: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class Transaction(BaseModel):
-    hash: str
-    from_address: str
-    to_address: str
-    operation: str
-    data: Dict[str, Any]
-    gas_limit: int
-    gas_used: int
-    gas_price: int
-    timestamp: int
-    block_number: Optional[int]
-    status: str
+class ActivityCreate(BaseModel):
+    transport_type: TransportType
+    distance_km: float
+    date: datetime
+    description: Optional[str] = None
 
-class Block(BaseModel):
-    block_number: int
-    timestamp: int
-    previous_hash: str
-    hash: str
-    transactions: List[Transaction]
-    gas_used: int
-    gas_limit: int
+class Activity(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    transport_type: TransportType
+    distance_km: float
+    carbon_footprint_kg: float
+    date: datetime
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-# Wallet Routes
-@api_router.post("/wallet/connect", response_model=WalletResponse)
-async def connect_wallet(wallet_data: WalletConnect):
-    """Simulate MetaMask wallet connection"""
-    if wallet_data.address:
-        # Existing wallet
-        wallet_address = wallet_data.address
-    else:
-        # Generate new wallet
-        wallet_address = blockchain.generate_address()
-    
-    # Simulate wallet balance (in ETH)
-    balance = round(random.uniform(0.5, 10.0), 4)
-    
-    return WalletResponse(address=wallet_address, balance=balance)
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
-@api_router.get("/wallet/{address}/balance")
-async def get_wallet_balance(address: str):
-    """Get wallet balance"""
-    balance = round(random.uniform(0.1, 5.0), 4)
-    return {"address": address, "balance": balance, "currency": "ETH"}
+class DashboardStats(BaseModel):
+    total_emissions: float
+    total_activities: int
+    avg_daily_emissions: float
+    current_month_emissions: float
 
-# Institution Routes
-@api_router.post("/institutions/register", response_model=Dict[str, Any])
-async def register_institution(institution_data: Institution):
-    """Register a new institution on the blockchain"""
+# Utility Functions
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+        
+        user = await db.users.find_one({"id": user_id})
+        if user is None:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        return User(**user)
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+def calculate_carbon_footprint(transport_type: TransportType, distance_km: float) -> float:
+    """Calculate carbon footprint based on transport type and distance"""
+    emission_factor = EMISSION_FACTORS.get(transport_type.value, 0)
+    return round(emission_factor * distance_km, 3)
+
+def prepare_for_mongo(data):
+    """Convert datetime objects to ISO strings for MongoDB storage"""
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                data[key] = value.isoformat()
+    return data
+
+def parse_from_mongo(item):
+    """Convert ISO strings back to datetime objects"""
+    if isinstance(item, dict):
+        for key, value in item.items():
+            if key in ['date', 'created_at'] and isinstance(value, str):
+                try:
+                    item[key] = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                except:
+                    pass
+    return item
+
+# Authentication Routes
+@api_router.post("/auth/register", response_model=Token)
+async def register(user_data: UserCreate):
+    # Check if user already exists
+    existing_user = await db.users.find_one({"email": user_data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Generate wallet address for institution
-    wallet_address = blockchain.generate_address()
-    institution_data.wallet_address = wallet_address
+    # Create user
+    hashed_password = hash_password(user_data.password)
+    user = User(email=user_data.email, name=user_data.name)
     
-    # Create blockchain transaction
-    contract_address = "0x742d35Cc6634C0532925a3b8D045A879689996F4"  # Mock contract address
-    tx_data = {
-        "name": institution_data.name,
-        "email": institution_data.email,
-        "address": institution_data.address
-    }
+    user_dict = user.dict()
+    user_dict["password"] = hashed_password
+    user_dict = prepare_for_mongo(user_dict)
     
-    transaction = blockchain.create_transaction(
-        from_address=wallet_address,
-        to_address=contract_address,
-        operation="register_institution",
-        data=tx_data,
-        gas_limit=200000
+    await db.users.insert_one(user_dict)
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": user.id})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@api_router.post("/auth/login", response_model=Token)
+async def login(user_data: UserLogin):
+    user = await db.users.find_one({"email": user_data.email})
+    if not user or not verify_password(user_data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    access_token = create_access_token(data={"sub": user["id"]})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@api_router.get("/auth/me", response_model=User)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return current_user
+
+# Activity Routes
+@api_router.post("/activities", response_model=Activity)
+async def create_activity(activity_data: ActivityCreate, current_user: User = Depends(get_current_user)):
+    carbon_footprint = calculate_carbon_footprint(activity_data.transport_type, activity_data.distance_km)
+    
+    activity = Activity(
+        user_id=current_user.id,
+        transport_type=activity_data.transport_type,
+        distance_km=activity_data.distance_km,
+        carbon_footprint_kg=carbon_footprint,
+        date=activity_data.date,
+        description=activity_data.description
     )
     
-    # Store in database
-    institution_dict = institution_data.dict()
-    institution_dict["registered_at"] = institution_dict["registered_at"].isoformat()
-    await db.institutions.insert_one(institution_dict)
+    activity_dict = prepare_for_mongo(activity.dict())
+    await db.activities.insert_one(activity_dict)
     
-    # Store in blockchain simulator
-    blockchain.institutions[institution_data.id] = institution_dict
-    
-    # Mine block (simulate auto-mining)
-    block = blockchain.mine_block()
-    
-    return {
-        "institution_id": institution_data.id,
-        "wallet_address": wallet_address,
-        "transaction_hash": transaction["hash"],
-        "block_number": block["blockNumber"] if block else None,
-        "gas_used": transaction["gasUsed"],
-        "status": "confirmed"
-    }
+    return activity
 
-@api_router.get("/institutions", response_model=List[Institution])
-async def get_institutions():
-    """Get all registered institutions"""
-    institutions = await db.institutions.find().to_list(1000)
-    return [Institution(**inst) for inst in institutions]
+@api_router.get("/activities", response_model=List[Activity])
+async def get_activities(current_user: User = Depends(get_current_user)):
+    activities = await db.activities.find({"user_id": current_user.id}).sort("date", -1).to_list(1000)
+    return [Activity(**parse_from_mongo(activity)) for activity in activities]
 
-@api_router.get("/institutions/{institution_id}")
-async def get_institution(institution_id: str):
-    """Get institution details"""
-    institution = await db.institutions.find_one({"id": institution_id})
-    if not institution:
-        raise HTTPException(status_code=404, detail="Institution not found")
-    return institution
-
-# Certificate Routes
-@api_router.post("/certificates/issue", response_model=Dict[str, Any])
-async def issue_certificate(cert_data: CertificateData, wallet_address: str):
-    """Issue a new certificate on the blockchain"""
+@api_router.get("/dashboard/stats", response_model=DashboardStats)
+async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
+    activities = await db.activities.find({"user_id": current_user.id}).to_list(1000)
     
-    # Verify institution exists
-    institution = await db.institutions.find_one({"id": cert_data.institution_id})
-    if not institution:
-        raise HTTPException(status_code=404, detail="Institution not found")
-    
-    # Calculate certificate hash
-    cert_hash_data = {
-        "recipient_name": cert_data.recipient_name,
-        "course_name": cert_data.course_name,
-        "completion_date": cert_data.completion_date,
-        "institution_id": cert_data.institution_id
-    }
-    certificate_hash = blockchain.calculate_certificate_hash(cert_hash_data)
-    
-    # Create blockchain transaction
-    contract_address = "0x742d35Cc6634C0532925a3b8D045A879689996F4"
-    tx_data = {
-        "certificate_hash": certificate_hash,
-        "recipient": cert_data.recipient_name,
-        "course": cert_data.course_name,
-        "completion_date": cert_data.completion_date,
-        "institution": cert_data.institution_id
-    }
-    
-    transaction = blockchain.create_transaction(
-        from_address=wallet_address,
-        to_address=contract_address,
-        operation="issue_certificate",
-        data=tx_data,
-        gas_limit=150000
-    )
-    
-    # Create certificate
-    certificate = Certificate(
-        certificate_hash=certificate_hash,
-        recipient_name=cert_data.recipient_name,
-        course_name=cert_data.course_name,
-        completion_date=cert_data.completion_date,
-        grade=cert_data.grade,
-        institution_id=cert_data.institution_id,
-        institution_name=institution["name"],
-        transaction_hash=transaction["hash"],
-        block_number=0  # Will be updated when mined
-    )
-    
-    # Store in database
-    cert_dict = certificate.dict()
-    cert_dict["issued_at"] = cert_dict["issued_at"].isoformat()
-    await db.certificates.insert_one(cert_dict)
-    
-    # Store in blockchain simulator
-    blockchain.certificates[certificate_hash] = cert_dict
-    
-    # Mine block
-    block = blockchain.mine_block()
-    if block:
-        # Update certificate with block number
-        await db.certificates.update_one(
-            {"certificate_hash": certificate_hash},
-            {"$set": {"block_number": block["blockNumber"]}}
+    if not activities:
+        return DashboardStats(
+            total_emissions=0,
+            total_activities=0,
+            avg_daily_emissions=0,
+            current_month_emissions=0
         )
     
-    return {
-        "certificate_id": certificate.id,
-        "certificate_hash": certificate_hash,
-        "transaction_hash": transaction["hash"],
-        "block_number": block["blockNumber"] if block else None,
-        "gas_used": transaction["gasUsed"],
-        "status": "confirmed"
-    }
-
-@api_router.get("/certificates/verify/{certificate_hash}")
-async def verify_certificate(certificate_hash: str):
-    """Verify certificate authenticity on the blockchain"""
+    total_emissions = sum(activity["carbon_footprint_kg"] for activity in activities)
+    total_activities = len(activities)
     
-    # Check database first
-    certificate = await db.certificates.find_one({"certificate_hash": certificate_hash})
-    if not certificate:
-        raise HTTPException(status_code=404, detail="Certificate not found")
+    # Calculate current month emissions
+    current_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    current_month_activities = [
+        activity for activity in activities 
+        if isinstance(activity.get("date"), str) and 
+        datetime.fromisoformat(activity["date"].replace('Z', '+00:00')) >= current_month
+    ]
+    current_month_emissions = sum(activity["carbon_footprint_kg"] for activity in current_month_activities)
     
-    # Simulate blockchain verification
-    contract_address = "0x742d35Cc6634C0532925a3b8D045A879689996F4"
-    verification_address = blockchain.generate_address()
+    # Calculate average daily emissions (last 30 days)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+    recent_activities = [
+        activity for activity in activities 
+        if isinstance(activity.get("date"), str) and 
+        datetime.fromisoformat(activity["date"].replace('Z', '+00:00')) >= thirty_days_ago
+    ]
+    avg_daily_emissions = sum(activity["carbon_footprint_kg"] for activity in recent_activities) / 30 if recent_activities else 0
     
-    tx_data = {"certificate_hash": certificate_hash}
-    
-    transaction = blockchain.create_transaction(
-        from_address=verification_address,
-        to_address=contract_address,
-        operation="verify_certificate",
-        data=tx_data,
-        gas_limit=25000
+    return DashboardStats(
+        total_emissions=round(total_emissions, 3),
+        total_activities=total_activities,
+        avg_daily_emissions=round(avg_daily_emissions, 3),
+        current_month_emissions=round(current_month_emissions, 3)
     )
+
+@api_router.get("/activities/chart-data")
+async def get_chart_data(period: str = "weekly", current_user: User = Depends(get_current_user)):
+    """Get emissions data for charts (daily, weekly, or monthly)"""
+    activities = await db.activities.find({"user_id": current_user.id}).to_list(1000)
     
-    # Mine verification transaction
-    block = blockchain.mine_block()
+    # Parse activities and sort by date
+    parsed_activities = []
+    for activity in activities:
+        try:
+            if isinstance(activity.get("date"), str):
+                activity["date"] = datetime.fromisoformat(activity["date"].replace('Z', '+00:00'))
+                parsed_activities.append(activity)
+        except:
+            continue
     
-    return {
-        "certificate": certificate,
-        "verified": True,
-        "verification_transaction": transaction["hash"],
-        "block_number": block["blockNumber"] if block else None,
-        "verification_timestamp": int(time.time())
-    }
-
-@api_router.get("/certificates", response_model=List[Certificate])
-async def get_certificates():
-    """Get all certificates"""
-    certificates = await db.certificates.find().to_list(1000)
-    return [Certificate(**cert) for cert in certificates]
-
-# Blockchain Explorer Routes
-@api_router.get("/blockchain/blocks", response_model=List[Block])
-async def get_blocks():
-    """Get blockchain blocks"""
-    return [Block(**block) for block in blockchain.blocks]
-
-@api_router.get("/blockchain/blocks/{block_number}")
-async def get_block(block_number: int):
-    """Get specific block details"""
-    for block in blockchain.blocks:
-        if block["blockNumber"] == block_number:
-            return block
-    raise HTTPException(status_code=404, detail="Block not found")
-
-@api_router.get("/blockchain/transactions")
-async def get_transactions():
-    """Get all transactions"""
-    all_transactions = []
-    for block in blockchain.blocks:
-        all_transactions.extend(block["transactions"])
-    all_transactions.extend(blockchain.pending_transactions)
-    return all_transactions
-
-@api_router.get("/blockchain/transactions/{tx_hash}")
-async def get_transaction(tx_hash: str):
-    """Get specific transaction details"""
-    # Check all blocks
-    for block in blockchain.blocks:
-        for tx in block["transactions"]:
-            if tx["hash"] == tx_hash:
-                return tx
+    parsed_activities.sort(key=lambda x: x["date"])
     
-    # Check pending transactions
-    for tx in blockchain.pending_transactions:
-        if tx["hash"] == tx_hash:
-            return tx
+    # Group by period
+    chart_data = []
+    if period == "daily":
+        # Last 30 days
+        for i in range(30):
+            date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=i)
+            day_emissions = sum(
+                activity["carbon_footprint_kg"] for activity in parsed_activities
+                if activity["date"].date() == date.date()
+            )
+            chart_data.append({
+                "date": date.strftime("%Y-%m-%d"),
+                "emissions": round(day_emissions, 3)
+            })
     
-    raise HTTPException(status_code=404, detail="Transaction not found")
-
-@api_router.get("/blockchain/stats")
-async def get_blockchain_stats():
-    """Get blockchain statistics"""
-    total_transactions = sum(len(block["transactions"]) for block in blockchain.blocks)
-    total_certificates = await db.certificates.count_documents({})
-    total_institutions = await db.institutions.count_documents({})
+    elif period == "weekly":
+        # Last 12 weeks
+        for i in range(12):
+            week_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(weeks=i)
+            week_start = week_start - timedelta(days=week_start.weekday())  # Start of week (Monday)
+            week_end = week_start + timedelta(days=7)
+            
+            week_emissions = sum(
+                activity["carbon_footprint_kg"] for activity in parsed_activities
+                if week_start <= activity["date"] < week_end
+            )
+            chart_data.append({
+                "date": week_start.strftime("%Y-W%U"),
+                "emissions": round(week_emissions, 3)
+            })
     
-    return {
-        "total_blocks": len(blockchain.blocks),
-        "total_transactions": total_transactions,
-        "pending_transactions": len(blockchain.pending_transactions),
-        "total_certificates": total_certificates,
-        "total_institutions": total_institutions,
-        "current_gas_price": blockchain.gas_price,
-        "latest_block": blockchain.blocks[-1] if blockchain.blocks else None
-    }
+    else:  # monthly
+        # Last 12 months
+        for i in range(12):
+            month_date = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_date = month_date.replace(month=month_date.month - i if month_date.month > i else 12 + month_date.month - i)
+            if month_date.month > datetime.now(timezone.utc).month:
+                month_date = month_date.replace(year=month_date.year - 1)
+            
+            month_emissions = sum(
+                activity["carbon_footprint_kg"] for activity in parsed_activities
+                if activity["date"].year == month_date.year and activity["date"].month == month_date.month
+            )
+            chart_data.append({
+                "date": month_date.strftime("%Y-%m"),
+                "emissions": round(month_emissions, 3)
+            })
+    
+    return {"data": list(reversed(chart_data))}
 
 # Include the router in the main app
 app.include_router(api_router)
