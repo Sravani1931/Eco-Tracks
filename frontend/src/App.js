@@ -35,7 +35,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
