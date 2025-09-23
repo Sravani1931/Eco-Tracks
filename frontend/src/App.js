@@ -15,6 +15,27 @@ import { Badge } from "./components/ui/badge";
 import { Progress } from "./components/ui/progress";
 import { CalendarIcon, Leaf, Car, Bus, Train, Plane, FootprintsIcon, TrendingUp, BarChart3, Plus } from "lucide-react";
 import { format } from "date-fns";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
