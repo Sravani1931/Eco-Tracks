@@ -376,6 +376,123 @@ const Dashboard = () => {
 };
 
 const DashboardTab = ({ stats }) => {
+  const [chartData, setChartData] = useState(null);
+  const [chartPeriod, setChartPeriod] = useState('weekly');
+  const [chartLoading, setChartLoading] = useState(true);
+
+  useEffect(() => {
+    fetchChartData();
+  }, [chartPeriod]);
+
+  const fetchChartData = async () => {
+    setChartLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/activities/chart-data?period=${chartPeriod}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const data = response.data.data;
+      setChartData({
+        labels: data.map(item => {
+          if (chartPeriod === 'daily') {
+            return format(new Date(item.date), 'MM/dd');
+          } else if (chartPeriod === 'weekly') {
+            return `Week ${item.date.split('-W')[1]}`;
+          } else {
+            return format(new Date(item.date + '-01'), 'MMM yyyy');
+          }
+        }),
+        datasets: [
+          {
+            label: 'CO₂ Emissions (kg)',
+            data: data.map(item => item.emissions),
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#10b981',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 6,
+            pointHoverRadius: 8,
+          }
+        ]
+      });
+    } catch (error) {
+      console.error('Failed to fetch chart data:', error);
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 14,
+            weight: '500'
+          }
+        }
+      },
+      title: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#374151',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true,
+        padding: 12
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#f3f4f6',
+          drawBorder: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12
+          },
+          callback: function(value) {
+            return value + ' kg';
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12
+          },
+          maxRotation: 0,
+        }
+      }
+    },
+    elements: {
+      point: {
+        hoverBorderWidth: 3,
+      }
+    }
+  };
+
   return (
     <div data-testid="dashboard-content" className="space-y-8">
       {/* Stats Cards */}
@@ -421,15 +538,43 @@ const DashboardTab = ({ stats }) => {
         </Card>
       </div>
 
-      {/* Chart Placeholder */}
+      {/* Chart Section */}
       <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
         <CardHeader>
-          <CardTitle>Emissions Trend</CardTitle>
-          <CardDescription>Your carbon footprint over time</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Emissions Trend</CardTitle>
+              <CardDescription>Your carbon footprint over time</CardDescription>
+            </div>
+            <Select value={chartPeriod} onValueChange={setChartPeriod}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center bg-emerald-50 rounded-lg border-2 border-dashed border-emerald-200">
-            <p className="text-emerald-600 font-medium">Chart visualization coming soon!</p>
+          <div className="h-80">
+            {chartLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+              </div>
+            ) : chartData && chartData.datasets[0].data.some(val => val > 0) ? (
+              <Line data={chartData} options={chartOptions} />
+            ) : (
+              <div className="h-full flex items-center justify-center bg-emerald-50 rounded-lg border-2 border-dashed border-emerald-200">
+                <div className="text-center">
+                  <TrendingUp className="h-12 w-12 text-emerald-300 mx-auto mb-4" />
+                  <p className="text-emerald-600 font-medium">No emissions data yet</p>
+                  <p className="text-emerald-500 text-sm">Start logging activities to see your trends!</p>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
