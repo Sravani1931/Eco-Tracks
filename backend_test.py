@@ -8,8 +8,18 @@ import uuid
 
 class EcoTrackAPITester:
     def __init__(self):
-        # Use the public endpoint from frontend .env
-        self.base_url = "https://code-fixer-53.preview.emergentagent.com/api"
+        # Read backend URL from frontend .env file
+        try:
+            with open('/app/frontend/.env', 'r') as f:
+                for line in f:
+                    if line.startswith('REACT_APP_BACKEND_URL='):
+                        backend_url = line.split('=', 1)[1].strip()
+                        self.base_url = f"{backend_url}/api"
+                        break
+                else:
+                    self.base_url = "http://localhost:8001/api"  # fallback
+        except:
+            self.base_url = "http://localhost:8001/api"  # fallback
         self.token = None
         self.user_id = None
         self.tests_run = 0
