@@ -11,20 +11,47 @@ A comprehensive full-stack web application that empowers users to track and redu
 
 **🎯 Perfect for demonstrating modern web development skills, environmental consciousness, and full-stack expertise for your portfolio and resume!**
 
-## 🚀 Live Demo & Screenshots
+## 🚀 Application Screenshots
 
-### Landing Page
-![EcoTrack Landing Page](https://via.placeholder.com/800x400/10b981/ffffff?text=EcoTrack+Landing+Page)
-*Beautiful, responsive landing page with clear call-to-action*
+### 🏠 Landing Page
+![EcoTrack Landing Page](screenshots/landing-page.png)
+*Beautiful, responsive landing page with clear environmental messaging and call-to-action*
 
-### Dashboard Interface  
-![EcoTrack Dashboard](https://via.placeholder.com/800x400/059669/ffffff?text=EcoTrack+Dashboard)
-*Interactive dashboard with real-time statistics and emission trends*
+### 📊 Dashboard Interface  
+![EcoTrack Dashboard](screenshots/dashboard.png)
+*Interactive dashboard with real-time carbon footprint statistics and emission trends*
 
-- **🌐 Frontend**: [Demo Link] - Responsive React application
-- **⚡ Backend API**: [API Documentation] - RESTful FastAPI endpoints  
-- **📊 Database**: MongoDB with optimized queries
-- **🔧 GitHub**: Complete source code with CI/CD pipeline
+### ➕ Activity Management
+![Add Activity](screenshots/add-activity.png)
+*User-friendly form for logging transportation activities with multiple transport types*
+
+### 📋 Activity History
+![Activity History](screenshots/activity-history.png)
+*Complete history of logged activities with emission calculations and transport icons*
+
+## 🌐 Local Development
+
+To run this application locally:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/ecotrack.git
+cd ecotrack
+
+# Backend setup
+cd backend
+pip install -r requirements.txt
+uvicorn server:app --reload --port 8001
+
+# Frontend setup (new terminal)
+cd frontend
+yarn install
+yarn start
+```
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8001
+- **API Documentation**: http://localhost:8001/docs
 
 ## ✨ Key Features
 
