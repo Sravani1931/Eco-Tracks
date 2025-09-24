@@ -15,7 +15,7 @@ from datetime import datetime, timezone, timedelta
 import json
 import bcrypt
 import jwt
-from enum import Str, Enum
+from enum import Enum
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
