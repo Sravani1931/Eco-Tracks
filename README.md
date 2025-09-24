@@ -26,15 +26,39 @@ A comprehensive full-stack web application that empowers users to track and redu
 - **📊 Database**: MongoDB with optimized queries
 - **🔧 GitHub**: Complete source code with CI/CD pipeline
 
-## ✨ Features
-- **User  Authentication**: Secure signup/login with JWT and password hashing (bcrypt).
-- **Activity Logging**: Forms to input daily activities (e.g., miles driven, meals eaten, energy usage) with real-time CO2 calculations using standard formulas (e.g., 0.4 kg CO2 per mile for cars).
-- **Personalized Reports**: Dashboard with visualizations using Chart.js (line/bar charts for emissions trends over time).
-- **Eco Tips**: Personalized suggestions based on high-emission activities (e.g., "Switch to public transit to save 20% CO2").
-- **Responsive Design**: Mobile-friendly UI with Tailwind CSS.
-- **Bonus Integration**: Weather-based tips via OpenWeather API (e.g., "Bundle up—reduce heating use today").
+## ✨ Key Features
 
-Quantified Impact: Handles data for 100+ simulated users, providing interactive dashboards to visualize and reduce carbon footprints.
+### 🔐 **Secure Authentication System**
+- JWT-based authentication with bcrypt password hashing
+- User registration and login with form validation
+- Protected routes and session management
+- Secure token storage and refresh
+
+### 📊 **Transportation Activity Tracking**
+- Multiple transport types: Car, Bus, Train, Flight, Walking, Cycling
+- Real-time CO₂ calculations using scientific emission factors:
+  - Car: 0.21 kg CO₂/km | Bus: 0.089 kg CO₂/km | Train: 0.041 kg CO₂/km
+  - Flight: 0.255 kg CO₂/km | Walking/Cycling: 0.0 kg CO₂/km
+- Distance tracking with date/time logging
+- Activity descriptions and notes
+
+### 📈 **Interactive Dashboard & Analytics**
+- Real-time statistics: Total emissions, activity count, daily averages
+- Dynamic charts with Chart.js (daily, weekly, monthly views)
+- Responsive data visualization with trend analysis
+- Personalized emission tracking over time
+
+### 🎨 **Modern User Experience**
+- Responsive design with Tailwind CSS and shadcn/ui components
+- Mobile-first approach with cross-device compatibility
+- Smooth animations and loading states
+- Intuitive navigation and user flows
+
+### 🔧 **Technical Excellence**
+- RESTful API architecture with FastAPI
+- MongoDB integration with optimized queries
+- Comprehensive error handling and validation
+- Automated testing suite and CI/CD pipeline
 
 ## 🛠️ Tech Stack
 - **Frontend**: React.js, Chart.js (for charts), Axios (for API calls), Tailwind CSS (styling).
