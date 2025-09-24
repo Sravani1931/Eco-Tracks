@@ -1,0 +1,24 @@
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to start a discussion! 🌱
+        
+        EcoTrack is a carbon footprint tracking application that helps users monitor and reduce their environmental impact through transportation tracking.
+        
+  - type: textarea
+    id: discussion-topic
+    attributes:
+      label: Discussion Topic
+      description: What would you like to discuss about EcoTrack?
+      placeholder: Tell us about your topic...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any additional context or information that might be helpful for the discussion.
+      placeholder: Add any relevant details, links, or screenshots...
