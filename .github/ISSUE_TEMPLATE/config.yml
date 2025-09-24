@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: EcoTrack Community Discussion
+    url: https://github.com/yourusername/ecotrack/discussions
+    about: Please ask and answer questions here.
+  - name: Documentation
+    url: https://github.com/yourusername/ecotrack/wiki
+    about: Check out our documentation for setup and usage guides.
