@@ -9,7 +9,7 @@ import uuid
 class EcoTrackAPITester:
     def __init__(self):
         # Use the public endpoint from frontend .env
-        self.base_url = "https://eco-metrics-7.preview.emergentagent.com/api"
+        self.base_url = "https://code-fixer-53.preview.emergentagent.com/api"
         self.token = None
         self.user_id = None
         self.tests_run = 0
