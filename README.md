@@ -11,13 +11,20 @@ A comprehensive full-stack web application that empowers users to track and redu
 
 **🎯 Perfect for demonstrating modern web development skills, environmental consciousness, and full-stack expertise for your portfolio and resume!**
 
-## 🚀 Live Demo
-- **Frontend**: [Live App Link]([live-link]) (Hosted on Vercel)
-- **Backend API**: [API Docs or Backend Link]([backend-link-if-public]) (Hosted on Render)
-- **GitHub Repo**: [[github-repo-link]]
+## 🚀 Live Demo & Screenshots
 
-![Home Page Screenshot](https://github.com/[yourusername]/ecotrack/raw/main/screenshot-home.png)
-*(Screenshot of the dashboard with a sample emissions chart)*
+### Landing Page
+![EcoTrack Landing Page](https://via.placeholder.com/800x400/10b981/ffffff?text=EcoTrack+Landing+Page)
+*Beautiful, responsive landing page with clear call-to-action*
+
+### Dashboard Interface  
+![EcoTrack Dashboard](https://via.placeholder.com/800x400/059669/ffffff?text=EcoTrack+Dashboard)
+*Interactive dashboard with real-time statistics and emission trends*
+
+- **🌐 Frontend**: [Demo Link] - Responsive React application
+- **⚡ Backend API**: [API Documentation] - RESTful FastAPI endpoints  
+- **📊 Database**: MongoDB with optimized queries
+- **🔧 GitHub**: Complete source code with CI/CD pipeline
 
 ## ✨ Features
 - **User  Authentication**: Secure signup/login with JWT and password hashing (bcrypt).
