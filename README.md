@@ -130,7 +130,61 @@ yarn start
 
 ## 🏗️ Installation & Setup
 
-### 1. Clone the Repository
+### 2. Environment Setup
+
+**Backend Environment:**
 ```bash
-git clone https://github.com/yourusername/ecotrack.git
-cd ecotrack
+cd backend
+cp .env.example .env
+```
+
+Edit `.env` file:
+```env
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=ecotrack
+CORS_ORIGINS=http://localhost:3000
+```
+
+**Frontend Environment:**
+```bash
+cd frontend  
+cp .env.example .env
+```
+
+Edit `.env` file:
+```env
+REACT_APP_BACKEND_URL=http://localhost:8001
+```
+
+### 3. Install Dependencies
+
+**Backend:**
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+**Frontend:**
+```bash
+cd frontend
+yarn install
+```
+
+### 4. Start Development Servers
+
+**Backend (Terminal 1):**
+```bash
+cd backend
+uvicorn server:app --reload --port 8001
+```
+
+**Frontend (Terminal 2):**
+```bash
+cd frontend
+yarn start
+```
+
+### 5. Access the Application
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8001  
+- **API Docs**: http://localhost:8001/docs
