@@ -122,14 +122,15 @@ yarn start
 - **Vercel/Render** - Cloud deployment platforms
 
 ## 📋 Prerequisites
-- Node.js (v14+)
-- MongoDB account (free Atlas cluster)
-- Git installed
+- **Node.js** (v18+) - [Download](https://nodejs.org/)
+- **Python** (3.11+) - [Download](https://python.org/)
+- **MongoDB** - Local installation or [Atlas account](https://mongodb.com/atlas)
+- **Git** - [Download](https://git-scm.com/)
+- **Yarn** - `npm install -g yarn`
 
-## 🏗️ Installation & Setup (Local Development)
-Follow these steps to run the project on your machine:
+## 🏗️ Installation & Setup
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/[yourusername]/ecotrack.git
+git clone https://github.com/yourusername/ecotrack.git
 cd ecotrack
