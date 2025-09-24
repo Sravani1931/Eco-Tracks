@@ -178,7 +178,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Carbon footprint calculation API endpoints"
     - "React EcoTrack carbon footprint tracking UI"
   stuck_tasks: []
   test_all: false
