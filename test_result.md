@@ -132,15 +132,18 @@ backend:
 
   - task: "Carbon footprint calculation API endpoints"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "API endpoints exist for auth, activities, dashboard stats, chart data. Need testing."
+        - working: true
+          agent: "testing"
+          comment: "Comprehensive API testing completed successfully. All endpoints working: Auth (register/login/me), Activities (CRUD), Dashboard stats, Chart data (daily/weekly/monthly). Carbon footprint calculations accurate for all transport types (car: 0.21, bus: 0.089, train: 0.041, flight: 0.255, walking/cycling: 0.0 kg CO2/km). JWT authentication secure. Data persistence verified. Edge cases tested (zero distance, large distances). 16/17 tests passed - only expected failure was login with non-existent test user."
 
 frontend:
   - task: "Create frontend .env file with backend URL"
