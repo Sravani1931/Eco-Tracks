@@ -1,0 +1,68 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+          
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+        
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        
+    - name: Run backend tests
+      run: |
+        cd backend
+        python -m pytest backend_test.py -v
+      env:
+        MONGO_URL: mongodb://localhost:27017
+        DB_NAME: ecotrack_test
+        
+  test-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'yarn'
+        cache-dependency-path: frontend/yarn.lock
+        
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        yarn install
+        
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        yarn test --watchAll=false --coverage
+        
+    - name: Build frontend
+      run: |
+        cd frontend
+        yarn build
+      env:
+        REACT_APP_BACKEND_URL: http://localhost:8001
