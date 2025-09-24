@@ -60,13 +60,39 @@ A comprehensive full-stack web application that empowers users to track and redu
 - Comprehensive error handling and validation
 - Automated testing suite and CI/CD pipeline
 
-## 🛠️ Tech Stack
-- **Frontend**: React.js, Chart.js (for charts), Axios (for API calls), Tailwind CSS (styling).
-- **Backend**: Node.js, Express.js (API server), Mongoose (ORM).
-- **Database**: MongoDB (cloud-hosted on Atlas).
-- **Authentication**: JWT tokens, bcrypt for passwords.
-- **Deployment**: Vercel (frontend), Render (backend), MongoDB Atlas (DB).
-- **Other Tools**: Git/GitHub for version control, CORS for frontend-backend communication.
+## 🛠️ Technology Stack
+
+### Frontend
+![React](https://img.shields.io/badge/React-19.0.0-61DAFB?style=flat-square&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-Latest-3178C6?style=flat-square&logo=typescript)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4.17-06B6D4?style=flat-square&logo=tailwindcss)
+
+- **React 19** - Modern functional components with hooks
+- **Chart.js** - Interactive data visualization and trend analysis  
+- **shadcn/ui** - Beautiful, accessible UI component library
+- **Tailwind CSS** - Utility-first CSS framework for responsive design
+- **Axios** - Promise-based HTTP client for API communication
+- **React Router** - Client-side routing and navigation
+
+### Backend  
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110.1-009688?style=flat-square&logo=fastapi)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python)
+![MongoDB](https://img.shields.io/badge/MongoDB-Latest-47A248?style=flat-square&logo=mongodb)
+
+- **FastAPI** - High-performance Python web framework
+- **Motor** - Asynchronous MongoDB driver
+- **Pydantic** - Data validation and settings management
+- **JWT & bcrypt** - Secure authentication and password hashing
+- **Uvicorn** - ASGI server for production deployment
+
+### Development & Deployment
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)
+![GitHub](https://img.shields.io/badge/GitHub-Actions-181717?style=flat-square&logo=github)
+
+- **MongoDB** - NoSQL database for flexible data storage
+- **GitHub Actions** - Automated CI/CD pipeline
+- **Docker** - Containerization for consistent deployment
+- **Vercel/Render** - Cloud deployment platforms
 
 ## 📋 Prerequisites
 - Node.js (v14+)
