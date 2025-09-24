@@ -1,0 +1,31 @@
+labels: ["idea", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        💡 **Have an idea for EcoTrack?**
+        
+        Share your ideas for new features, improvements, or integrations that could help users better track and reduce their carbon footprint!
+        
+  - type: textarea
+    id: idea-description
+    attributes:
+      label: Idea Description
+      description: Describe your idea in detail
+      placeholder: What's your idea for improving EcoTrack?
+    validations:
+      required: true
+      
+  - type: textarea
+    id: environmental-impact
+    attributes:
+      label: Environmental Impact
+      description: How would this idea help users reduce their carbon footprint or improve environmental tracking?
+      placeholder: Explain the potential environmental benefits...
+      
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Thoughts
+      description: Any thoughts on how this could be implemented?
+      placeholder: Technical considerations, UI/UX ideas, integration possibilities...
